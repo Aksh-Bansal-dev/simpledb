@@ -34,15 +34,25 @@ func (db *SimpleDB) Put(key, value string) {
 	}
 }
 
-func (db *SimpleDB) Get(key string) {
+func (db *SimpleDB) Get(key string) (string, bool) {
 	db.file.Seek(0, 0)
 	scanner := bufio.NewScanner(db.file)
+	res := ""
+	found := false
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		entry, err := UnmarshalEntry(scanner.Text())
+		if err != nil {
+			log.Fatal(err)
+		}
+		if entry.Key == key {
+			found = true
+			res = entry.Val
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+	return res, found
 }
 
 func (db *SimpleDB) Close() {
