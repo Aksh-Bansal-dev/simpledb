@@ -13,8 +13,8 @@ type SimpleDB struct {
 }
 
 type Entry struct {
-	key string
-	val string
+	Key string
+	Val string
 }
 
 func NewDatabase(dbPath string) *SimpleDB {
@@ -35,7 +35,7 @@ func (db *SimpleDB) Close() {
 	db.file.Close()
 }
 
-func Unmarshal(s string) (Entry, error) {
+func UnmarshalEntry(s string) (Entry, error) {
 	var res Entry
 	invalidEntryFormatErr := errors.New("Invalid entry format")
 
@@ -54,7 +54,7 @@ func Unmarshal(s string) (Entry, error) {
 	key := s[pos+1 : pos+1+int(keyLen)]
 
 	// val
-	pos++
+	pos += 1 + int(keyLen)
 	startPos := pos
 	for s[pos] != ':' {
 		pos++
@@ -64,11 +64,11 @@ func Unmarshal(s string) (Entry, error) {
 		return res, invalidEntryFormatErr
 	}
 	val := s[pos+1 : pos+1+int(valLen)]
-	res.key = key
-	res.val = val
+	res.Key = key
+	res.Val = val
 	return res, nil
 }
 
-func (entry *Entry) Marshal() string {
-	return fmt.Sprintf("%d:%s%d:%s", len(entry.key), entry.key, len(entry.val), entry.val)
+func (entry *Entry) MarshalEntry() string {
+	return fmt.Sprintf("%d:%s%d:%s", len(entry.Key), entry.Key, len(entry.Val), entry.Val)
 }
