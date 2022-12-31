@@ -11,13 +11,17 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 	db := simpledb.NewDatabase("simple.db")
 	defer db.Close()
-	val, present := db.Get("some")
+	val, present := db.Get("hello")
 	if present {
 		fmt.Println(val)
+	} else {
+		fmt.Println("not found")
 	}
-	db.Put("some", "hooooooo")
-	val, present = db.Get("some")
+	db.Put("hello", "world")
+	val, present = db.Get("hello")
 	if present {
 		fmt.Println(val)
+	} else {
+		fmt.Println("not found")
 	}
 }
