@@ -15,7 +15,7 @@ func main() {
 	if present {
 		fmt.Println(val)
 	}
-	db.Put("some", "sus")
+	db.Put("some", "hooooooo")
 	val, present = db.Get("some")
 	if present {
 		fmt.Println(val)

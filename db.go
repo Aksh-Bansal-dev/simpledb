@@ -4,13 +4,16 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type SimpleDB struct {
-	file *os.File
+	file     *os.File
+	indexMap map[string]int
 }
 
 type Entry struct {
@@ -19,23 +22,69 @@ type Entry struct {
 }
 
 func NewDatabase(dbPath string) *SimpleDB {
-	f, err := os.OpenFile(dbPath, os.O_CREATE|os.O_RDWR, 0644)
+	f, err := os.OpenFile(dbPath, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &SimpleDB{file: f}
+
+	// create index
+	indexMap := map[string]int{}
+
+	offset, _ := f.Seek(0, io.SeekCurrent)
+	curLine, eofReached := nextLine(f)
+	for !eofReached {
+		entry, err := UnmarshalEntry(curLine)
+		if err != nil {
+			log.Fatal(err)
+		}
+		indexMap[entry.Key] = int(offset)
+		offset, _ = f.Seek(0, io.SeekCurrent)
+		curLine, eofReached = nextLine(f)
+	}
+	return &SimpleDB{file: f, indexMap: indexMap}
+}
+
+func nextLine(f *os.File) (string, bool) {
+	var sb strings.Builder
+	end := false
+	for {
+		char := make([]byte, 1)
+		ret, _ := f.Read(char)
+		if ret == 0 {
+			end = true
+			break
+		}
+		if char[0] == '\n' {
+			break
+		}
+		sb.Write(char)
+	}
+	return sb.String(), end
 }
 
 func (db *SimpleDB) Put(key, value string) {
 	entry := Entry{Key: key, Val: value}
-	db.file.Seek(0, 2)
+	offset, _ := db.file.Seek(0, io.SeekEnd)
+	db.indexMap[key] = int(offset)
 	if _, err := db.file.WriteString(fmt.Sprintf("%s\n", entry.Marshal())); err != nil {
 		log.Println(err)
 	}
 }
 
 func (db *SimpleDB) Get(key string) (string, bool) {
-	db.file.Seek(0, 0)
+	if _, present := db.indexMap[key]; !present {
+		return "", false
+	}
+	db.file.Seek(int64(db.indexMap[key]), io.SeekStart)
+	entryLine, _ := nextLine(db.file)
+	entry, err := UnmarshalEntry(entryLine)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return entry.Val, true
+}
+func (db *SimpleDB) GetWithoutIndex(key string) (string, bool) {
+	db.file.Seek(0, io.SeekStart)
 	scanner := bufio.NewScanner(db.file)
 	res := ""
 	found := false
