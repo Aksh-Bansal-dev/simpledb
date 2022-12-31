@@ -1,6 +1,7 @@
 package simpledb
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"log"
@@ -18,7 +19,7 @@ type Entry struct {
 }
 
 func NewDatabase(dbPath string) *SimpleDB {
-	f, err := os.OpenFile(dbPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(dbPath, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,8 +27,21 @@ func NewDatabase(dbPath string) *SimpleDB {
 }
 
 func (db *SimpleDB) Put(key, value string) {
-	if _, err := db.file.WriteString("differetn to append\n"); err != nil {
+	entry := Entry{Key: key, Val: value}
+	db.file.Seek(0, 2)
+	if _, err := db.file.WriteString(fmt.Sprintf("%s\n", entry.Marshal())); err != nil {
 		log.Println(err)
+	}
+}
+
+func (db *SimpleDB) Get(key string) {
+	db.file.Seek(0, 0)
+	scanner := bufio.NewScanner(db.file)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -69,6 +83,6 @@ func UnmarshalEntry(s string) (Entry, error) {
 	return res, nil
 }
 
-func (entry *Entry) MarshalEntry() string {
+func (entry *Entry) Marshal() string {
 	return fmt.Sprintf("%d:%s%d:%s", len(entry.Key), entry.Key, len(entry.Val), entry.Val)
 }

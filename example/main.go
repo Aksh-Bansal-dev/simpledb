@@ -10,7 +10,9 @@ func main() {
 	log.SetFlags(log.Lshortfile)
 	db := simpledb.NewDatabase("simple.db")
 	defer db.Close()
-	db.Put("rank", "1")
+	db.Put("some", "creatinve")
+	db.Get("some")
+	// db.Get("rank")
 	// hui := simpledb.Entry{"hi", "world"}
 	// huis := hui.MarshalEntry()
 	// log.Println(huis)
